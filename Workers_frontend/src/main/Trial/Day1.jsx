@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import Timer from './Timer';
 
 function Day1() {
 
@@ -9,6 +10,7 @@ function Day1() {
   const [show,setshow]=useState(false);
   const [loading,setloading]=useState(false);
   const [buttonvis,setbuttonvis]=useState(true);
+  const [timerdis,settimerdis]=useState(true);
 
   function goup(){
     setcounter(counter+1);
@@ -54,7 +56,7 @@ function Day1() {
       setTimeout(() => {
         setloading(false);
         setshow(true);
-      }, 3000);
+      }, 1000);
       setTimeout(() => {
         setshow(false);
         setbuttonvis(true);
@@ -122,7 +124,17 @@ function Day1() {
       })}</ul>}
     </div>
 
+    <div>
+      <button className='bg-slate-400 rounded-md'onClick={()=>{settimerdis(prev=>!prev)}}>{timerdis ? 'Hide Timer' : 'Show Timer'}</button>
+      {timerdis && <Timer/>}
+    </div>
 
+  <div className='pt-4'>
+          <p className='flex justify-center bg-slate-500 font-bold text-lg'>DAY 3</p>
+  </div>
+      <div>
+        
+      </div>
     </>
   )
 }

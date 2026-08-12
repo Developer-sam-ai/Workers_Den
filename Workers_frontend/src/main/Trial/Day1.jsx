@@ -6,6 +6,9 @@ function Day1() {
   const [isvisible,setisvisible]=useState(false);
   const [text,setText]=useState('');
   const [users,setusers]=useState([]);
+  const [show,setshow]=useState(false);
+  const [loading,setloading]=useState(false);
+  const [buttonvis,setbuttonvis]=useState(true);
 
   function goup(){
     setcounter(counter+1);
@@ -39,12 +42,25 @@ function Day1() {
 
   }
 
-    useEffect(()=>{
-    fetch('https://jsonplaceholder.typicode.com/users')
-    .then(resp=>resp.json())
-    .then(data=>setusers(data))
-  },[]);
+  useEffect(()=>{
+      fetch("https://jsonplaceholder.typicode.com/posts")
+      .then(e=>e.json())
+      .then(use=>setusers(use))
+    },[])
 
+    function handlefetch(){
+      setbuttonvis(false);
+      setloading(true);
+      setTimeout(() => {
+        setloading(false);
+        setshow(true);
+      }, 3000);
+      setTimeout(() => {
+        setshow(false);
+        setbuttonvis(true);
+      }, 8000);
+      
+    }
 
   return (
     < >
@@ -88,12 +104,22 @@ function Day1() {
           <p className='flex justify-center bg-slate-500 font-bold text-lg'>DAY 2</p>
 
       <div>
-        <ul>
-          {users.map((user)=>(
-            <li key={user.id}>{user.name}</li>
-          ))}
-        </ul>
+        {/* making only first 5 names to be typed */}
+          <ul>
+            {users.slice(0,5).map((user)=>{
+              return <p key={user.id}>{user.title}</p>
+            })};
+          </ul>
       </div>
+    </div>
+
+    <div>
+
+      {buttonvis &&<button className='bg-slate-400 shadow-md animate-bounce border-l-orange-400' onClick={()=>{handlefetch()}}>fetch details</button>}
+      {loading && <p className='animate-pulse text-red-600'>Loading...</p>}
+      {show && <ul>{users.slice(5,10).map((user)=>{
+        return <ol className='bg-slate-400 p-3'>{user.id}</ol>
+      })}</ul>}
     </div>
 
 

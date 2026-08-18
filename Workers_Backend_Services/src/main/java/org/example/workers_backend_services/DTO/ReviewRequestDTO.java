@@ -1,6 +1,8 @@
 package org.example.workers_backend_services.DTO;
 
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -8,19 +10,13 @@ import lombok.Setter;
 @Setter
 public class ReviewRequestDTO {
 
+    @NotNull(message = "Service Request ID is required")
+    private Long requestId;
 
-    @NotNull(message = "Services request id required")
-    private Long serviceRequestId;
-    @NotNull(message = "Customer id cant required")
-    private Long customerId;
-    @NotNull(message = "Worker id cant required")
-    private Long workerId;
-    @NotNull(message = "Rating required")
-    @Min(value = 1,message = "Rating must be atleast one")
-    @Max(value = 5,message = "Rating must not exceed five")
-    private Integer rating;
-    @NotBlank(message = "review required")
-    @Size(max = 255,message = "review text must not exceed 255 char")
+    @NotNull(message = "Rating is required")
+    @DecimalMin(value = "1.0", message = "Rating must be at least 1.0")
+    @DecimalMax(value = "5.0", message = "Rating cannot exceed 5.0")
+    private Double rating;
+
     private String reviewText;
-
 }

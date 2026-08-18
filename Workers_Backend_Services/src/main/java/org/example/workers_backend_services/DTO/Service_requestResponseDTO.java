@@ -1,8 +1,7 @@
 package org.example.workers_backend_services.DTO;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
+import org.example.workers_backend_services.Entity.ServiceStatus;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -10,26 +9,28 @@ import java.time.LocalTime;
 
 @Getter
 @Setter
+@NoArgsConstructor
 @AllArgsConstructor
-
+@Builder
 public class Service_requestResponseDTO {
-    private Long service_id;
-
-    private Long customer_id;
+    private Long requestId;
+    private Long customerId;
     private String customerName;
-
+    private String customerPhone;
     private Long workerId;
     private String workerName;
-
-    private Long category_id;
+    private String workerPhone;
+    private Long categoryId;
     private String categoryName;
-
     private String title;
     private String description;
     private String address;
+    private String locality;
     private LocalDate preferredDate;
     private LocalTime preferredTime;
-    private String status;
+    private String urgency;
+    private Double customerPrice;
+    private Double workerPayout;
+    private ServiceStatus status;
     private LocalDateTime createdAt;
-
 }

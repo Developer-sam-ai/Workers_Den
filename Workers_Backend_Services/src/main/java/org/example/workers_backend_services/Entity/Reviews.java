@@ -1,40 +1,46 @@
 package org.example.workers_backend_services.Entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 
 @Entity
-@AllArgsConstructor
-@NoArgsConstructor
+@Table(name = "reviews", uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"request_id"})
+})
 @Getter
 @Setter
-
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Reviews {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long reviewId;
+    @Column(name = "review_id")
+    private Long id;
 
-    @OneToOne
-    @JoinColumn(name="service_id")
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "request_id", nullable = false, unique = true)
     private Service_request serviceRequest;
 
-    @ManyToOne
-    @JoinColumn(name="customer_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "customer_id", nullable = false)
     private Users customer;
 
-    @ManyToOne
-    @JoinColumn(name="worker_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "worker_id", nullable = false)
     private Worker_profile worker;
 
-    private Integer rating;
+    @Column(nullable = false)
+    private Double rating;
 
+    @Column(name = "review_text", length = 1000)
     private String reviewText;
 
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 }

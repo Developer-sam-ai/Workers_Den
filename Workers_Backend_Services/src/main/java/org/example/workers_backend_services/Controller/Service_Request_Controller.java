@@ -3,64 +3,84 @@ package org.example.workers_backend_services.Controller;
 import jakarta.validation.Valid;
 import org.example.workers_backend_services.DTO.Service_requestRequestDTO;
 import org.example.workers_backend_services.DTO.Service_requestResponseDTO;
-import org.example.workers_backend_services.Entity.Service_request;
-import org.example.workers_backend_services.Service.Service_Request_Services;
+import org.example.workers_backend_services.Service.Service_Request_interface;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/service_request")
+@RequestMapping("/api/jobs")
 public class Service_Request_Controller {
+
     @Autowired
-    Service_Request_Services services;
+    private Service_Request_interface serviceRequestService;
 
     @PostMapping
-    public ResponseEntity<Service_requestResponseDTO> createRequest( @Valid @RequestBody Service_requestRequestDTO dto) {
-        Service_requestResponseDTO createdRequest = services.createServiceRequest(dto);
-        return new ResponseEntity<>(createdRequest, HttpStatus.CREATED);
+    @PreAuthorize("hasRole('CUSTOMER')")
+    public ResponseEntity<Service_requestResponseDTO> createJob(
+            @AuthenticationPrincipal String email,
+            @Valid @RequestBody Service_requestRequestDTO dto) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(serviceRequestService.createJob(email, dto));
     }
 
-    // 2. Get all service requests
-    @GetMapping
-    public ResponseEntity<List<Service_requestResponseDTO>> getAllRequests() {
-        List<Service_requestResponseDTO> requests = services.getAllServiceRequests();
-        return ResponseEntity.ok(requests);
+    @GetMapping("/customer/my-jobs")
+    @PreAuthorize("hasRole('CUSTOMER')")
+    public ResponseEntity<List<Service_requestResponseDTO>> getCustomerJobs(@AuthenticationPrincipal String email) {
+        return ResponseEntity.ok(serviceRequestService.getMyCustomerJobs(email));
     }
 
-    // 3. Get a specific service request by ID
+    @GetMapping("/worker/available")
+    @PreAuthorize("hasRole('WORKER')")
+    public ResponseEntity<List<Service_requestResponseDTO>> getAvailableJobs(@AuthenticationPrincipal String email) {
+        return ResponseEntity.ok(serviceRequestService.getAvailableJobsForWorker(email));
+    }
+
+    @GetMapping("/worker/my-jobs")
+    @PreAuthorize("hasRole('WORKER')")
+    public ResponseEntity<List<Service_requestResponseDTO>> getWorkerJobs(@AuthenticationPrincipal String email) {
+        return ResponseEntity.ok(serviceRequestService.getMyWorkerJobs(email));
+    }
+
     @GetMapping("/{id}")
-    public ResponseEntity<Service_requestResponseDTO> getRequestById(@Valid @PathVariable("id") Long id) {
-        Service_requestResponseDTO request = services.getServiceRequestById(id);
-        if (request != null) {
-            return ResponseEntity.ok(request);
-        }
-        return ResponseEntity.notFound().build();
+    public ResponseEntity<Service_requestResponseDTO> getJobById(
+            @PathVariable Long id,
+            @AuthenticationPrincipal String email) {
+        return ResponseEntity.ok(serviceRequestService.getJobById(id, email));
     }
 
-    // 4. Update an existing service request
-    @PutMapping("/{id}")
-    public ResponseEntity<Service_requestResponseDTO> updateRequest(@Valid @PathVariable("id") Long id, @RequestBody Service_requestRequestDTO dto) {
-        Service_requestResponseDTO updatedRequest = services.updateServiceRequest(id, dto);
-       return ResponseEntity.ok(updatedRequest);
+    @PostMapping("/{id}/accept")
+    @PreAuthorize("hasRole('WORKER')")
+    public ResponseEntity<Service_requestResponseDTO> acceptJob(
+            @PathVariable Long id,
+            @AuthenticationPrincipal String email) {
+        return ResponseEntity.ok(serviceRequestService.acceptJob(id, email));
     }
 
-    @PutMapping("/{id}/assign-worker/{workerId}")
-    public ResponseEntity<Service_requestResponseDTO> assignWorker(@PathVariable("id") Long id,@PathVariable("workerId") Long workerId){
-        Service_requestResponseDTO updatedrequest=services.assignWorker(id,workerId);
-        return ResponseEntity.ok(updatedrequest);
+    @PostMapping("/{id}/start")
+    @PreAuthorize("hasRole('WORKER')")
+    public ResponseEntity<Service_requestResponseDTO> startJob(
+            @PathVariable Long id,
+            @AuthenticationPrincipal String email) {
+        return ResponseEntity.ok(serviceRequestService.startJob(id, email));
     }
 
-    // 5. Delete a service request
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteRequest(@PathVariable("id") Long id) {
-        boolean deleted = services.deleteServiceRequest(id);
-        if (deleted) {
-            return ResponseEntity.noContent().build();
-        }
-        return ResponseEntity.notFound().build();
+    @PostMapping("/{id}/complete")
+    @PreAuthorize("hasRole('WORKER')")
+    public ResponseEntity<Service_requestResponseDTO> completeJob(
+            @PathVariable Long id,
+            @AuthenticationPrincipal String email) {
+        return ResponseEntity.ok(serviceRequestService.completeJob(id, email));
+    }
+
+    @PostMapping("/{id}/cancel")
+    public ResponseEntity<Service_requestResponseDTO> cancelJob(
+            @PathVariable Long id,
+            @AuthenticationPrincipal String email) {
+        return ResponseEntity.ok(serviceRequestService.cancelJob(id, email));
     }
 }

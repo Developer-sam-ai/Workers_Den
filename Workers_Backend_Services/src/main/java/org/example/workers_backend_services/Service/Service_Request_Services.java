@@ -3,117 +3,229 @@ package org.example.workers_backend_services.Service;
 import org.example.workers_backend_services.DTO.Service_requestRequestDTO;
 import org.example.workers_backend_services.DTO.Service_requestResponseDTO;
 import org.example.workers_backend_services.Entity.*;
-import org.example.workers_backend_services.Repository.CategoryRepository;
-import org.example.workers_backend_services.Repository.Service_Request_Repository;
-import org.example.workers_backend_services.Repository.UserRepository;
-import org.example.workers_backend_services.Repository.Worker_profileRepository;
+import org.example.workers_backend_services.Exception.InvalidJobStateException;
+import org.example.workers_backend_services.Exception.JobAlreadyAcceptedException;
+import org.example.workers_backend_services.Exception.ResourceNotFoundException;
+import org.example.workers_backend_services.Exception.UnauthorizedActionException;
+import org.example.workers_backend_services.Repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class Service_Request_Services implements Service_Request_interface {
 
     @Autowired
-    Service_Request_Repository repository;
+    private Service_Request_Repository serviceRequestRepository;
+
     @Autowired
-    CategoryRepository catrepo;
+    private UserRepository userRepository;
+
     @Autowired
-    UserRepository userrepo;
+    private Worker_profileRepository workerProfileRepository;
+
     @Autowired
-    Worker_profileRepository workerProfileRepository;
+    private CategoryRepository categoryRepository;
+
+    @Autowired
+    private Worker_category_Repository workerCategoryRepository;
 
     @Override
-    public Service_requestResponseDTO createServiceRequest(Service_requestRequestDTO dto) {
-        Users customer = userrepo.findById(dto.getCustomerId())
-                .orElseThrow(() -> new RuntimeException("Customer not found with id: " + dto.getCustomerId()));
-        Category category = catrepo.findById(dto.getCategoryId())
-                .orElseThrow(() -> new RuntimeException("Category not found with id: " + dto.getCategoryId()));
+    @Transactional
+    public Service_requestResponseDTO createJob(String customerEmail, Service_requestRequestDTO dto) {
+        Users customer = userRepository.findByEmail(customerEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("Customer not found: " + customerEmail));
 
-        Service_request request = new Service_request();
-        request.setCustomer(customer);
-        request.setCategory(category);
-        request.setTitle(dto.getTitle());
-        request.setDescription(dto.getDescription());
-        request.setAddress(dto.getAddress());
-        request.setPreferredDate(dto.getPreferredDate());
-        request.setPreferredTime(dto.getPreferredTime());
-        request.setStatus(ServiceStatus.OPEN);   // server-controlled, always starts here
-        request.setCreatedAt(LocalDateTime.now());
-        // worker intentionally left null — assigned separately
+        Category category = categoryRepository.findById(dto.getCategoryId())
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found: " + dto.getCategoryId()));
 
-        Service_request saved = repository.save(request);
-        return convertDto(saved);
-
-    }
-
-    @Override
-    public List<Service_requestResponseDTO> getAllServiceRequests() {
-        return repository.findAll().stream()
-                .map(this::convertDto)
-                .toList();
-    }
-
-    @Override
-    public Service_requestResponseDTO getServiceRequestById(Long id) {
-        Service_request req= repository.findById(id).orElseThrow(()->new RuntimeException("Service request not found"));
-        return convertDto(req);
-    }
-    @Override
-    public Service_requestResponseDTO updateServiceRequest(Long id, Service_requestRequestDTO Dto) {
-        Service_request existingrequest=repository.findById(id)
-                .orElseThrow(()->new RuntimeException("No service request found"));
-        Category category=catrepo.findById(id).orElseThrow(()->new RuntimeException("No category found"));
-
-        existingrequest.setCategory(category);
-        existingrequest.setTitle(Dto.getTitle());
-        existingrequest.setDescription(Dto.getDescription());
-        existingrequest.setAddress(Dto.getAddress());
-        existingrequest.setPreferredDate(Dto.getPreferredDate());
-        existingrequest.setPreferredTime(Dto.getPreferredTime());
-
-        Service_request updated = repository.save(existingrequest);
-        return convertDto(updated);
-    }
-
-    @Override
-    public boolean deleteServiceRequest(Long id) {
-        if (repository.existsById(id)) {
-            repository.deleteById(id);
-            return true;
+        if (!category.getIsActive()) {
+            throw new InvalidJobStateException("Category is currently inactive");
         }
-        return false;
+
+        Service_request request = Service_request.builder()
+                .customer(customer)
+                .category(category)
+                .title(dto.getTitle())
+                .description(dto.getDescription())
+                .address(dto.getAddress())
+                .locality(dto.getLocality())
+                .preferredDate(dto.getPreferredDate())
+                .preferredTime(dto.getPreferredTime())
+                .urgency(dto.getUrgency())
+                .customerPrice(category.getCustomerPrice())
+                .workerPayout(category.getWorkerPayout())
+                .status(ServiceStatus.OPEN)
+                .build();
+
+        return mapToDTO(serviceRequestRepository.save(request));
     }
 
-    private Service_requestResponseDTO convertDto(Service_request serviceRequest){
-        return new Service_requestResponseDTO(
-                serviceRequest.getService_id(),
-                serviceRequest.getCustomer().getUser_id(),
-                serviceRequest.getCustomer().getUser_name(),
-                serviceRequest.getWorker().getWorker_id(),
-                serviceRequest.getWorker().getUsers().getUser_name(),
-                serviceRequest.getCategory().getCat_id(),
-                serviceRequest.getCategory().getCat_name(),
-                serviceRequest.getTitle(),
-                serviceRequest.getDescription(),
-                serviceRequest.getAddress(),
-                serviceRequest.getPreferredDate(),
-                serviceRequest.getPreferredTime(),
-                serviceRequest.getStatus().toString(),
-                serviceRequest.getCreatedAt()
-        );
+    @Override
+    public List<Service_requestResponseDTO> getMyCustomerJobs(String customerEmail) {
+        return serviceRequestRepository.findByCustomer_EmailOrderByCreatedAtDesc(customerEmail).stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
     }
 
-    public Service_requestResponseDTO assignWorker(Long id, Long workerId) {
-        Service_request existingrequest=repository.findById(id).orElseThrow(()->new RuntimeException("Service request not found with id "+id));
-        Worker_profile profile=workerProfileRepository.findById(id).orElseThrow(()->new RuntimeException("Worker not found radha"));
+    @Override
+    public List<Service_requestResponseDTO> getAvailableJobsForWorker(String workerEmail) {
+        Worker_profile worker = workerProfileRepository.findByUser_Email(workerEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("Worker profile not found for: " + workerEmail));
 
-        existingrequest.setWorker(profile);
-        existingrequest.setStatus(ServiceStatus.OPEN.equals(existingrequest.getStatus())?ServiceStatus.ASSIGNED:existingrequest.getStatus());
-        Service_request updated = repository.save(existingrequest);
-        return convertDto(updated);
+        if (!worker.getIsAvailable()) {
+            return List.of();
+        }
+
+        long activeCount = serviceRequestRepository.countByWorker_IdAndStatusIn(
+                worker.getId(), List.of(ServiceStatus.ACCEPTED, ServiceStatus.IN_PROGRESS));
+        if (activeCount >= worker.getMaxCapacity()) {
+            return List.of();
+        }
+
+        return serviceRequestRepository.findAvailableJobsForWorker(worker.getId(), worker.getLocality()).stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Service_requestResponseDTO> getMyWorkerJobs(String workerEmail) {
+        Worker_profile worker = workerProfileRepository.findByUser_Email(workerEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("Worker profile not found for: " + workerEmail));
+
+        return serviceRequestRepository.findByWorker_IdOrderByCreatedAtDesc(worker.getId()).stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public Service_requestResponseDTO getJobById(Long jobId, String userEmail) {
+        Service_request job = serviceRequestRepository.findById(jobId)
+                .orElseThrow(() -> new ResourceNotFoundException("Job not found with ID: " + jobId));
+        return mapToDTO(job);
+    }
+
+    @Override
+    @Transactional
+    public Service_requestResponseDTO acceptJob(Long jobId, String workerEmail) {
+        Worker_profile worker = workerProfileRepository.findByUser_Email(workerEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("Worker profile not found for: " + workerEmail));
+
+        if (!worker.getIsAvailable()) {
+            throw new InvalidJobStateException("You are marked as unavailable");
+        }
+
+        long activeJobs = serviceRequestRepository.countByWorker_IdAndStatusIn(
+                worker.getId(), List.of(ServiceStatus.ACCEPTED, ServiceStatus.IN_PROGRESS));
+        if (activeJobs >= worker.getMaxCapacity()) {
+            throw new InvalidJobStateException("You have reached your maximum active job capacity (" + worker.getMaxCapacity() + ")");
+        }
+
+        Service_request job = serviceRequestRepository.findById(jobId)
+                .orElseThrow(() -> new ResourceNotFoundException("Job not found with ID: " + jobId));
+
+        if (job.getStatus() != ServiceStatus.OPEN) {
+            throw new JobAlreadyAcceptedException("Job is no longer available. Current status: " + job.getStatus());
+        }
+
+        boolean providesCategory = workerCategoryRepository
+                .findByWorkerProfile_IdAndCategory_Id(worker.getId(), job.getCategory().getId()).isPresent();
+        if (!providesCategory) {
+            throw new UnauthorizedActionException("You do not provide service for this category");
+        }
+
+        job.setWorker(worker);
+        job.setStatus(ServiceStatus.ACCEPTED);
+        return mapToDTO(serviceRequestRepository.save(job));
+    }
+
+    @Override
+    @Transactional
+    public Service_requestResponseDTO startJob(Long jobId, String workerEmail) {
+        Service_request job = serviceRequestRepository.findById(jobId)
+                .orElseThrow(() -> new ResourceNotFoundException("Job not found with ID: " + jobId));
+
+        if (job.getWorker() == null || !job.getWorker().getUser().getEmail().equals(workerEmail)) {
+            throw new UnauthorizedActionException("You are not assigned to this job");
+        }
+
+        if (job.getStatus() != ServiceStatus.ACCEPTED) {
+            throw new InvalidJobStateException("Job cannot be started from status: " + job.getStatus());
+        }
+
+        job.setStatus(ServiceStatus.IN_PROGRESS);
+        return mapToDTO(serviceRequestRepository.save(job));
+    }
+
+    @Override
+    @Transactional
+    public Service_requestResponseDTO completeJob(Long jobId, String workerEmail) {
+        Service_request job = serviceRequestRepository.findById(jobId)
+                .orElseThrow(() -> new ResourceNotFoundException("Job not found with ID: " + jobId));
+
+        if (job.getWorker() == null || !job.getWorker().getUser().getEmail().equals(workerEmail)) {
+            throw new UnauthorizedActionException("You are not assigned to this job");
+        }
+
+        if (job.getStatus() != ServiceStatus.IN_PROGRESS) {
+            throw new InvalidJobStateException("Job must be IN_PROGRESS before completion");
+        }
+
+        job.setStatus(ServiceStatus.COMPLETED);
+
+        Worker_profile worker = job.getWorker();
+        worker.setCompletedJobs(worker.getCompletedJobs() + 1);
+        workerProfileRepository.save(worker);
+
+        return mapToDTO(serviceRequestRepository.save(job));
+    }
+
+    @Override
+    @Transactional
+    public Service_requestResponseDTO cancelJob(Long jobId, String userEmail) {
+        Service_request job = serviceRequestRepository.findById(jobId)
+                .orElseThrow(() -> new ResourceNotFoundException("Job not found with ID: " + jobId));
+
+        boolean isCustomer = job.getCustomer().getEmail().equals(userEmail);
+        boolean isWorker = job.getWorker() != null && job.getWorker().getUser().getEmail().equals(userEmail);
+
+        if (!isCustomer && !isWorker) {
+            throw new UnauthorizedActionException("You do not have permission to cancel this job");
+        }
+
+        if (job.getStatus() == ServiceStatus.COMPLETED || job.getStatus() == ServiceStatus.CANCELLED) {
+            throw new InvalidJobStateException("Cannot cancel a job with status: " + job.getStatus());
+        }
+
+        job.setStatus(ServiceStatus.CANCELLED);
+        return mapToDTO(serviceRequestRepository.save(job));
+    }
+
+    private Service_requestResponseDTO mapToDTO(Service_request job) {
+        return Service_requestResponseDTO.builder()
+                .requestId(job.getId())
+                .customerId(job.getCustomer().getId())
+                .customerName(job.getCustomer().getUserName())
+                .customerPhone(job.getCustomer().getPhone())
+                .workerId(job.getWorker() != null ? job.getWorker().getId() : null)
+                .workerName(job.getWorker() != null ? job.getWorker().getUser().getUserName() : null)
+                .workerPhone(job.getWorker() != null ? job.getWorker().getUser().getPhone() : null)
+                .categoryId(job.getCategory().getId())
+                .categoryName(job.getCategory().getCatName())
+                .title(job.getTitle())
+                .description(job.getDescription())
+                .address(job.getAddress())
+                .locality(job.getLocality())
+                .preferredDate(job.getPreferredDate())
+                .preferredTime(job.getPreferredTime())
+                .urgency(job.getUrgency())
+                .customerPrice(job.getCustomerPrice())
+                .workerPayout(job.getWorkerPayout())
+                .status(job.getStatus())
+                .createdAt(job.getCreatedAt())
+                .build();
     }
 }

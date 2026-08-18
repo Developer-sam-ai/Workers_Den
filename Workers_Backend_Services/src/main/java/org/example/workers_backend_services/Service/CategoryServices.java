@@ -1,64 +1,64 @@
 package org.example.workers_backend_services.Service;
 
-import jakarta.persistence.Entity;
 import org.example.workers_backend_services.DTO.CategoryRequestDTO;
 import org.example.workers_backend_services.DTO.CategoryResponseDTO;
-import org.example.workers_backend_services.DTO.UserResponseDTO;
 import org.example.workers_backend_services.Entity.Category;
+import org.example.workers_backend_services.Exception.ResourceNotFoundException;
 import org.example.workers_backend_services.Repository.CategoryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class CategoryServices {
 
     @Autowired
-    CategoryRepository categoryRepository;
-//    @Autowired
-//    private Category category;
+    private CategoryRepository categoryRepository;
 
-
-    public CategoryResponseDTO getCategory(Long id) {
-         Category cat=categoryRepository.findById(id).orElseThrow(()->new RuntimeException("category cannot be null"));
-         return convertToDTO(cat);
+    public CategoryResponseDTO createCategory(CategoryRequestDTO dto) {
+        Category category = Category.builder()
+                .catName(dto.getCatName())
+                .description(dto.getDescription())
+                .customerPrice(dto.getCustomerPrice())
+                .workerPayout(dto.getWorkerPayout())
+                .isActive(dto.getIsActive() != null ? dto.getIsActive() : true)
+                .build();
+        return mapToDTO(categoryRepository.save(category));
     }
 
-    public List<CategoryResponseDTO> getAllcategory() {
-        return categoryRepository.findAll()
-                .stream()
-                .map(this::convertToDTO)
-                .toList();
+    public List<CategoryResponseDTO> getAllActiveCategories() {
+        return categoryRepository.findByIsActiveTrue().stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
     }
 
-    public CategoryResponseDTO setCategory(CategoryRequestDTO dto) {
-        Category category1=new Category();
-        category1.setCat_name(dto.getCat_name());
-        category1.setDescription(dto.getDescription());
-        Category saved=categoryRepository.save(category1);
-        return convertToDTO(saved);
-
+    public CategoryResponseDTO getCategoryById(Long id) {
+        Category category = categoryRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found with ID: " + id));
+        return mapToDTO(category);
     }
 
     public CategoryResponseDTO updateCategory(Long id, CategoryRequestDTO dto) {
-        Category refined=categoryRepository.findById(id).orElseThrow(()->new RuntimeException("category cant be null"));
-        refined.setCat_name(dto.getCat_name());
-        refined.setDescription(dto.getDescription());
-        Category saved=categoryRepository.save(refined);
-        return convertToDTO(saved);
+        Category category = categoryRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found with ID: " + id));
+        category.setCatName(dto.getCatName());
+        category.setDescription(dto.getDescription());
+        category.setCustomerPrice(dto.getCustomerPrice());
+        category.setWorkerPayout(dto.getWorkerPayout());
+        if (dto.getIsActive() != null) category.setIsActive(dto.getIsActive());
+        return mapToDTO(categoryRepository.save(category));
     }
 
-    public void deleteCategory(Long id) {
-        categoryRepository.deleteById(id);
-    }
-
-
-    private CategoryResponseDTO convertToDTO(Category category){
-        return new CategoryResponseDTO(
-                category.getCat_id(),
-                category.getCat_name(),
-                category.getDescription()
-        );
+    private CategoryResponseDTO mapToDTO(Category category) {
+        return CategoryResponseDTO.builder()
+                .id(category.getId())
+                .catName(category.getCatName())
+                .description(category.getDescription())
+                .customerPrice(category.getCustomerPrice())
+                .workerPayout(category.getWorkerPayout())
+                .isActive(category.getIsActive())
+                .build();
     }
 }

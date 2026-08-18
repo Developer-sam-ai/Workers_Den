@@ -1,10 +1,28 @@
 package org.example.workers_backend_services.Repository;
 
+import org.example.workers_backend_services.Entity.ServiceStatus;
 import org.example.workers_backend_services.Entity.Service_request;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-@Repository
-public interface Service_Request_Repository extends JpaRepository<Service_request,Long> {
+import java.util.List;
 
+@Repository
+public interface Service_Request_Repository extends JpaRepository<Service_request, Long> {
+
+    List<Service_request> findByCustomer_EmailOrderByCreatedAtDesc(String email);
+
+    List<Service_request> findByWorker_IdOrderByCreatedAtDesc(Long workerId);
+
+    long countByWorker_IdAndStatusIn(Long workerId, List<ServiceStatus> statuses);
+
+    @Query("SELECT sr FROM Service_request sr " +
+            "JOIN Worker_category wc ON wc.category.id = sr.category.id " +
+            "WHERE sr.status = 'OPEN' " +
+            "AND sr.locality = :locality " +
+            "AND wc.workerProfile.id = :workerId " +
+            "ORDER BY sr.createdAt DESC")
+    List<Service_request> findAvailableJobsForWorker(@Param("workerId") Long workerId, @Param("locality") String locality);
 }

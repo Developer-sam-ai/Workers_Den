@@ -1,17 +1,17 @@
 package org.example.workers_backend_services.DTO;
 
-
-import jakarta.validation.constraints.NotBlank;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 @Getter
 @Setter
+@NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class CategoryResponseDTO {
-
-    private Long cat_id;
-    private String cat_name;
+    private Long id;
+    private String catName;
     private String description;
+    private Double customerPrice;
+    private Double workerPayout;
+    private Boolean isActive;
 }

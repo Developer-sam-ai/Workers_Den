@@ -4,26 +4,25 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "worker_category")
-@Data
-@Setter
+@Table(name = "worker_category", uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"worker_id", "cat_id"})
+})
 @Getter
-@AllArgsConstructor
+@Setter
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Worker_category {
 
     @Id
-    @GeneratedValue (strategy = GenerationType.IDENTITY)
-    private Long workCatId;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-    private double min_price;
-    private double max_price;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "worker_id", nullable = false)
+    private Worker_profile workerProfile;
 
-    @ManyToOne
-    @JoinColumn(name = "worker_id")
-    private Worker_profile worker;
-
-    @ManyToOne
-    @JoinColumn(name ="cat_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cat_id", nullable = false)
     private Category category;
 }

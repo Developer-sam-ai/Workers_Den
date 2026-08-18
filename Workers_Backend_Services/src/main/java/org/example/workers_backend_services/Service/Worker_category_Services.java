@@ -5,96 +5,70 @@ import org.example.workers_backend_services.DTO.Worker_categoryresponseDTO;
 import org.example.workers_backend_services.Entity.Category;
 import org.example.workers_backend_services.Entity.Worker_category;
 import org.example.workers_backend_services.Entity.Worker_profile;
+import org.example.workers_backend_services.Exception.ResourceNotFoundException;
 import org.example.workers_backend_services.Repository.CategoryRepository;
 import org.example.workers_backend_services.Repository.Worker_category_Repository;
 import org.example.workers_backend_services.Repository.Worker_profileRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class Worker_category_Services {
 
     @Autowired
-    Worker_category_Repository categoryRepository;
+    private Worker_category_Repository workerCategoryRepository;
+
     @Autowired
-    Worker_profileRepository workerRepo;
+    private Worker_profileRepository workerProfileRepository;
+
     @Autowired
-    CategoryRepository catRepo;
+    private CategoryRepository categoryRepository;
 
-    public Worker_categoryresponseDTO createWorkerCategory(Worker_categoryrequestDTO dto) {
-        if(dto.getMax_price()<dto.getMin_price()){
-            throw new RuntimeException("max price cannot be less than min price");
-        }
+    @Transactional
+    public Worker_categoryresponseDTO addSkill(String userEmail, Worker_categoryrequestDTO dto) {
+        Worker_profile worker = workerProfileRepository.findByUser_Email(userEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("Worker profile not found for: " + userEmail));
 
-        Worker_profile workerProfile=workerRepo.findById(dto.getWorker_id()).orElseThrow(()->new RuntimeException("Worker not found with id"+dto.getWorker_id()));
-        Category category=catRepo.findById(dto.getCat_id()).orElseThrow(()->new RuntimeException("Category not found with id: "));
+        Category category = categoryRepository.findById(dto.getCategoryId())
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found with ID: " + dto.getCategoryId()));
 
-        Worker_category workerCategory=new Worker_category();
-        workerCategory.setMin_price(dto.getMin_price());
-        workerCategory.setMax_price(dto.getMax_price());
-        workerCategory.setWorker(workerProfile);
-        workerCategory.setCategory(category);
+        Worker_category mapping = workerCategoryRepository.findByWorkerProfile_IdAndCategory_Id(worker.getId(), category.getId())
+                .orElseGet(() -> Worker_category.builder()
+                        .workerProfile(worker)
+                        .category(category)
+                        .build());
 
-        Worker_category saved=categoryRepository.save(workerCategory);
-        return convert_to_DTO(saved);
+        Worker_category saved = workerCategoryRepository.save(mapping);
+        return Worker_categoryresponseDTO.builder()
+                .id(saved.getId())
+                .workerId(saved.getWorkerProfile().getId())
+                .categoryId(saved.getCategory().getId())
+                .categoryName(saved.getCategory().getCatName())
+                .build();
     }
 
+    public List<Worker_categoryresponseDTO> getMySkills(String userEmail) {
+        Worker_profile worker = workerProfileRepository.findByUser_Email(userEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("Worker profile not found for: " + userEmail));
 
-    public List<Worker_categoryresponseDTO> getAllWorkerCategories() {
-        return categoryRepository.findAll()
-                .stream()
-                .map(this::convert_to_DTO)
-                .toList();
+        return workerCategoryRepository.findByWorkerProfile_Id(worker.getId()).stream()
+                .map(m -> Worker_categoryresponseDTO.builder()
+                        .id(m.getId())
+                        .workerId(m.getWorkerProfile().getId())
+                        .categoryId(m.getCategory().getId())
+                        .categoryName(m.getCategory().getCatName())
+                        .build())
+                .collect(Collectors.toList());
     }
 
-
-    public Worker_categoryresponseDTO getWorkerCategoryById(Long id) {
-
-        Worker_category workerCategory=categoryRepository.findById(id).orElseThrow(()->new RuntimeException("worker category not found "));
-        return convert_to_DTO(workerCategory);
-
-
+    @Transactional
+    public void removeSkill(String userEmail, Long categoryId) {
+        Worker_profile worker = workerProfileRepository.findByUser_Email(userEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("Worker profile not found for: " + userEmail));
+        workerCategoryRepository.deleteByWorkerProfile_IdAndCategory_Id(worker.getId(), categoryId);
     }
-
-
-    public Worker_categoryresponseDTO updateWorkerCategory(Long id, Worker_categoryrequestDTO categoryrequestDTO) {
-        if(categoryrequestDTO.getMin_price()>categoryrequestDTO.getMax_price()){
-            throw new RuntimeException("Max price cannot be less than min price");
-        }
-        Worker_category existing=categoryRepository.findById(id)
-                .orElseThrow(()->new RuntimeException("Worker Category not found with id "+id));
-
-        Category category=catRepo.findById(categoryrequestDTO.getCat_id())
-                .orElseThrow(()->new RuntimeException("Category not found with id: "));
-
-        existing.setMin_price(categoryrequestDTO.getMin_price());
-        existing.setMax_price(categoryrequestDTO.getMax_price());
-        existing.setCategory(category);
-
-        Worker_category updated= categoryRepository.save(existing);
-        return convert_to_DTO(updated);
-    }
-
-    public boolean deleteWorkerCategory(Long id) {
-        if (categoryRepository.existsById(id)) {
-            categoryRepository.deleteById(id);
-            return true;
-        }
-        return false;
-    }
-
-    public Worker_categoryresponseDTO convert_to_DTO(Worker_category workerCategory){
-        return new Worker_categoryresponseDTO(
-                workerCategory.getWorkCatId(),
-                workerCategory.getMin_price(),
-                workerCategory.getMax_price(),
-                workerCategory.getWorker().getWorker_id(),
-                workerCategory.getWorker().getUsers().getUser_name(),
-                workerCategory.getCategory().getCat_id(),
-                workerCategory.getCategory().getCat_name()
-        );
-     }
 }

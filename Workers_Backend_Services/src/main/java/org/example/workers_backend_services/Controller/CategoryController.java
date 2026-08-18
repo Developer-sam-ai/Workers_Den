@@ -5,7 +5,9 @@ import org.example.workers_backend_services.DTO.CategoryRequestDTO;
 import org.example.workers_backend_services.DTO.CategoryResponseDTO;
 import org.example.workers_backend_services.Service.CategoryServices;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -15,32 +17,27 @@ import java.util.List;
 public class CategoryController {
 
     @Autowired
-    CategoryServices categoryServices;
-    @GetMapping("/{id}")
-    public ResponseEntity<CategoryResponseDTO> getCategory_byid(@PathVariable Long id){
-        CategoryResponseDTO dto=categoryServices.getCategory(id);
-        return ResponseEntity.ok(dto);
-    }
+    private CategoryServices categoryServices;
+
     @GetMapping
-    public ResponseEntity<List<CategoryResponseDTO>> getAllCategory(){
-        List<CategoryResponseDTO> res=categoryServices.getAllcategory();
-        return ResponseEntity.ok(res);
+    public ResponseEntity<List<CategoryResponseDTO>> getAllCategories() {
+        return ResponseEntity.ok(categoryServices.getAllActiveCategories());
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<CategoryResponseDTO> getCategoryById(@PathVariable Long id) {
+        return ResponseEntity.ok(categoryServices.getCategoryById(id));
     }
 
     @PostMapping
-    public ResponseEntity<CategoryResponseDTO> setCategory(@Valid  @RequestBody CategoryRequestDTO dto){
-        return ResponseEntity.ok(categoryServices.setCategory(dto));
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<CategoryResponseDTO> createCategory(@Valid @RequestBody CategoryRequestDTO dto) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(categoryServices.createCategory(dto));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<CategoryResponseDTO> putCategory( @PathVariable  Long id,@Valid @RequestBody CategoryRequestDTO dto){
-        CategoryResponseDTO category1=categoryServices.updateCategory(id,dto);
-        return ResponseEntity.ok(category1);
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<String> deleteCategory(@PathVariable Long id){
-        categoryServices.deleteCategory(id);
-        return ResponseEntity.ok(("Category Deleted"));
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<CategoryResponseDTO> updateCategory(@PathVariable Long id, @Valid @RequestBody CategoryRequestDTO dto) {
+        return ResponseEntity.ok(categoryServices.updateCategory(id, dto));
     }
 }

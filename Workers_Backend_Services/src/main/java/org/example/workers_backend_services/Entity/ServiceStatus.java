@@ -2,7 +2,8 @@ package org.example.workers_backend_services.Entity;
 
 public enum ServiceStatus {
     OPEN,
-    ASSIGNED,
+    ACCEPTED,
+    IN_PROGRESS,
     COMPLETED,
     CANCELLED
 }

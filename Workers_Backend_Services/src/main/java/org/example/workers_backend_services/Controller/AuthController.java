@@ -34,12 +34,12 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Email is already in use");
         }
 
-        // Standard instantiation without relying on @Builder
         Users user = new Users();
         user.setUser_name(dto.getUser_name());
         user.setEmail(dto.getEmail());
         user.setPhone(dto.getPhone());
         user.setPassword(passwordEncoder.encode(dto.getPassword()));
+
         if (dto.getRole() != null) {
             try {
                 user.setRole(Role.valueOf(dto.getRole().trim().toUpperCase()));
@@ -48,19 +48,19 @@ public class AuthController {
                         .body("Invalid role. Allowed roles are: CUSTOMER, WORKER, ADMIN");
             }
         } else {
-            user.setRole(Role.CUSTOMER); // default role fallback
+            user.setRole(Role.CUSTOMER);
         }
 
         Users savedUser = userRepository.save(user);
 
-        UserResponseDTO response = new UserResponseDTO();
-        response.setUser_id(savedUser.getUser_id());
-        response.setUser_name(savedUser.getUser_name());
-        response.setEmail(savedUser.getEmail());
-        response.setPhone(savedUser.getPhone());
-
-        // Convert Role enum to String to match your UserResponseDTO definition
-        response.setRole(savedUser.getRole() != null ? savedUser.getRole().name() : null);
+        UserResponseDTO response = UserResponseDTO.builder()
+                .user_id(savedUser.getUser_id())
+                .user_name(savedUser.getUser_name())
+                .email(savedUser.getEmail())
+                .phone(savedUser.getPhone())
+                .role(savedUser.getRole() != null ? savedUser.getRole().name() : null)
+                .created_at(savedUser.getCreated_at())
+                .build();
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }

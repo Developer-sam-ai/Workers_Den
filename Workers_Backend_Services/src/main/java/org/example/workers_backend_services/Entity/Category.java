@@ -1,24 +1,35 @@
 package org.example.workers_backend_services.Entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import jakarta.persistence.*;
+import lombok.*;
 
 @Entity
-@AllArgsConstructor
-@NoArgsConstructor
-@Setter
+@Table(name = "category")
 @Getter
-
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Category {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long cat_id;
-    private String cat_name;
+    @Column(name = "cat_id")
+    private Long id;
+
+    @Column(name = "cat_name", nullable = false, unique = true)
+    private String catName;
+
+    @Column(length = 500)
     private String description;
+
+    @Column(name = "customer_price", nullable = false)
+    private Double customerPrice;
+
+    @Column(name = "worker_payout", nullable = false)
+    private Double workerPayout;
+
+    @Builder.Default
+    @Column(name = "is_active", nullable = false)
+    private Boolean isActive = true;
 }

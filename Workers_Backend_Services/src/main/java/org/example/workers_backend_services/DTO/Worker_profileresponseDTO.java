@@ -1,24 +1,24 @@
 package org.example.workers_backend_services.DTO;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.Setter;
-
-import java.math.BigDecimal;
+import lombok.*;
 
 @Getter
 @Setter
+@NoArgsConstructor
 @AllArgsConstructor
-
+@Builder
 public class Worker_profileresponseDTO {
-
-    private Long worker_id;
-    private int experience_years;
+    private Long workerId;
+    private Long userId;
+    private String userName;
+    private String email;
+    private String phone;
     private String bio;
-    private String profile_image;
-    private BigDecimal rating;
-    private int completed_jobs;
-
-    private Long user_id;
-    private String user_name;
+    private Integer experience;
+    private Double rating;
+    private Integer completedJobs;
+    private String profileImage;
+    private String locality;
+    private Boolean isAvailable;
+    private Integer maxCapacity;
 }

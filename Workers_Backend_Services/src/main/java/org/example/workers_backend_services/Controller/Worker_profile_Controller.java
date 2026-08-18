@@ -3,12 +3,11 @@ package org.example.workers_backend_services.Controller;
 import jakarta.validation.Valid;
 import org.example.workers_backend_services.DTO.Worker_profilerequestDTO;
 import org.example.workers_backend_services.DTO.Worker_profileresponseDTO;
-import org.example.workers_backend_services.Entity.Users;
-import org.example.workers_backend_services.Entity.Worker_profile;
 import org.example.workers_backend_services.Service.Worker_profile_services;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,42 +17,29 @@ import java.util.List;
 public class Worker_profile_Controller {
 
     @Autowired
-    Worker_profile_services services;
+    private Worker_profile_services workerProfileServices;
 
-    @GetMapping
-    public ResponseEntity<List<Worker_profileresponseDTO>> getallWorkers(){
-        List<Worker_profileresponseDTO> list=services.getallworkers();
-        return ResponseEntity.ok(list);
+    @PostMapping("/profile")
+    @PreAuthorize("hasRole('WORKER')")
+    public ResponseEntity<Worker_profileresponseDTO> saveProfile(
+            @AuthenticationPrincipal String email,
+            @Valid @RequestBody Worker_profilerequestDTO dto) {
+        return ResponseEntity.ok(workerProfileServices.createOrUpdateProfile(email, dto));
+    }
+
+    @GetMapping("/me")
+    @PreAuthorize("hasRole('WORKER')")
+    public ResponseEntity<Worker_profileresponseDTO> getMyProfile(@AuthenticationPrincipal String email) {
+        return ResponseEntity.ok(workerProfileServices.getMyProfile(email));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Worker_profileresponseDTO> getWorker(@PathVariable Long id){
-        Worker_profileresponseDTO prof=services.getWorker(id);
-        if(prof!=null){
-            return ResponseEntity.ok(prof);
-        }
-        return ResponseEntity.notFound().build();
+    public ResponseEntity<Worker_profileresponseDTO> getProfileById(@PathVariable Long id) {
+        return ResponseEntity.ok(workerProfileServices.getProfileById(id));
     }
 
-    @PostMapping
-    public ResponseEntity<Worker_profileresponseDTO> addWorker(@Valid @RequestBody Worker_profilerequestDTO profile){
-        Worker_profileresponseDTO prof=services.addworker(profile);
-        return new ResponseEntity<>(prof, HttpStatus.CREATED);
-    }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<Worker_profileresponseDTO> updateWorker(@PathVariable long id, @Valid @RequestBody Worker_profilerequestDTO profile){
-        Worker_profileresponseDTO prof=services.updateWorker(id,profile);
-        if(prof!=null){
-            return ResponseEntity.ok(prof);
-        }
-        return ResponseEntity.notFound().build();
-
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<String> deleteWorker(@PathVariable long id){
-        services.deleteWorker(id);
-        return ResponseEntity.ok("worker_profile_not_found");
+    @GetMapping
+    public ResponseEntity<List<Worker_profileresponseDTO>> getAllProfiles() {
+        return ResponseEntity.ok(workerProfileServices.getAllProfiles());
     }
 }

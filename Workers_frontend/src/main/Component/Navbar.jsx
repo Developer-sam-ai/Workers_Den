@@ -1,11 +1,15 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Bell, Menu, X, User } from 'lucide-react';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { ArrowRight, Bell, User, Wrench, Briefcase, PlusCircle } from 'lucide-react';
 
-export default function Navbar() {
+export default function Navbar({ mode, setMode, theme }) {
   const navigate = useNavigate();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const location = useLocation();
   const [notifOpen, setNotifOpen] = useState(false);
+
+  if (location.pathname === '/login' || location.pathname === '/register') {
+    return null;
+  }
 
   const token = localStorage.getItem('token');
   let user = null;
@@ -27,109 +31,211 @@ export default function Navbar() {
     navigate('/login');
   };
 
-  const getDashboardPath = () => {
-    if (!user) return '/login';
-    if (user.role === 'CUSTOMER') return '/customer/dashboard';
-    if (user.role === 'WORKER') return '/worker/dashboard';
-    return '/';
+  const t = theme || {
+    border: '#2E343E',
+    text: '#EDEAE4',
+    muted: '#8E95A0',
+    accent: '#FF753A',
+    surfaceCard: '#1B1E23',
   };
 
+  const isCustomer = user?.role === 'CUSTOMER';
+  const isWorker = user?.role === 'WORKER';
+
   return (
-    <header className="bg-white border-b border-slate-200 sticky top-0 z-40">
-      <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-        <Link to="/" className="text-xl font-bold text-blue-600 tracking-tight flex items-center gap-2">
-          Workers Den
+    <header
+      style={{
+        borderBottom: `1px solid ${t.border}`,
+        background: mode === 'light' ? '#F5F3EB' : '#121417',
+        color: t.text,
+      }}
+      className="sticky top-0 z-50 transition-colors duration-150"
+    >
+      <div className="max-w-6xl mx-auto px-5 h-16 flex items-center justify-between">
+        
+        {/* Brand Logo */}
+        <Link to={user ? (isCustomer ? '/customer/dashboard' : '/worker/dashboard') : '/'} className="flex items-center gap-2.5 text-decoration-none">
+          <div
+            style={{
+              width: 26,
+              height: 26,
+              background: mode === 'light' ? '#2F363F' : '#22262B',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <div style={{ width: 9, height: 9, background: t.accent }} />
+          </div>
+          <span className="wd-display font-black text-lg tracking-wider" style={{ color: t.text }}>
+            WORKERS<span style={{ color: t.accent }}>DEN</span>
+          </span>
+          {user && (
+            <span
+              className="wd-mono text-[9px] px-1.5 py-0.5 border"
+              style={{ borderColor: t.border, color: t.accent }}
+            >
+              {user.role}
+            </span>
+          )}
         </Link>
 
-        <div className="hidden sm:flex items-center gap-6 text-sm font-medium">
+        {/* Dynamic Navigation Center */}
+        <nav className="hidden md:flex items-center gap-6 wd-mono text-xs tracking-wider">
+          {!user && (
+            <>
+              <a href="#services" className="hover:text-amber-500 transition" style={{ color: t.muted }}>
+                SERVICES
+              </a>
+              <a href="#workflow" className="hover:text-amber-500 transition" style={{ color: t.muted }}>
+                WORKFLOW
+              </a>
+              <a href="#team" className="hover:text-amber-500 transition" style={{ color: t.muted }}>
+                ROLES
+              </a>
+            </>
+          )}
+
+          {isCustomer && (
+            <>
+              <Link to="/customer/dashboard" className="hover:text-amber-500 transition font-bold" style={{ color: t.text }}>
+                OVERVIEW
+              </Link>
+              <Link to="/customer/create-job" className="flex items-center gap-1 hover:text-amber-500 transition" style={{ color: t.muted }}>
+                <PlusCircle className="w-3.5 h-3.5" /> POST ORDER
+              </Link>
+            </>
+          )}
+
+          {isWorker && (
+            <>
+              <Link to="/worker/dashboard" className="hover:text-amber-500 transition font-bold" style={{ color: t.text }}>
+                COMMAND CENTER
+              </Link>
+              <Link to="/worker/find-jobs" className="flex items-center gap-1 hover:text-amber-500 transition" style={{ color: t.muted }}>
+                <Briefcase className="w-3.5 h-3.5" /> DISCOVERY FEED
+              </Link>
+            </>
+          )}
+        </nav>
+
+        {/* Right Action Controls */}
+        <div className="flex items-center gap-3">
+          {/* Theme Mode Toggle */}
+          {setMode && (
+            <button
+              type="button"
+              onClick={() => setMode(mode === 'light' ? 'dark' : 'light')}
+              className="wd-mono wd-btn text-[11px] font-bold px-2 py-1 flex items-center gap-2"
+              style={{
+                border: `1px solid ${t.border}`,
+                background: 'transparent',
+                color: t.text,
+              }}
+            >
+              <span>{mode.toUpperCase()}</span>
+              <span
+                style={{
+                  position: 'relative',
+                  width: 22,
+                  height: 12,
+                  background: t.border,
+                  display: 'inline-block',
+                }}
+              >
+                <span
+                  style={{
+                    position: 'absolute',
+                    top: 1,
+                    left: 1,
+                    width: 10,
+                    height: 10,
+                    background: t.accent,
+                    transform: mode === 'dark' ? 'translateX(10px)' : 'translateX(0)',
+                    transition: 'transform 100ms ease',
+                  }}
+                />
+              </span>
+            </button>
+          )}
+
+          {/* User Session Elements */}
           {user ? (
             <>
-              <Link to={getDashboardPath()} className="text-slate-700 hover:text-blue-600 transition">
-                Dashboard
-              </Link>
-              
+              {/* Notification Popper */}
               <div className="relative">
-                <button 
-                  onClick={() => setNotifOpen(!notifOpen)} 
-                  className="p-1.5 rounded-full text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition relative"
+                <button
+                  type="button"
+                  onClick={() => setNotifOpen(!notifOpen)}
+                  className="p-2 border relative flex items-center justify-center"
+                  style={{ borderColor: t.border, background: 'transparent', color: t.text }}
                 >
-                  <Bell className="w-5 h-5" />
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-blue-600 rounded-full"></span>
+                  <Bell className="w-3.5 h-3.5" />
+                  <span
+                    className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full"
+                    style={{ background: t.accent }}
+                  />
                 </button>
                 {notifOpen && (
-                  <div className="absolute right-0 mt-2 w-72 bg-white border border-slate-200 rounded-xl shadow-lg p-3 text-xs z-50">
-                    <p className="font-semibold text-slate-800 border-b pb-2 mb-2">Notifications</p>
-                    <p className="text-slate-600 mb-2">Worker assigned to your request</p>
-                    <p className="text-slate-400">10m ago</p>
+                  <div
+                    className="absolute right-0 mt-2 w-64 border p-3 text-[11px] z-50 wd-mono"
+                    style={{ background: mode === 'light' ? '#EAE7DC' : '#1B1E23', borderColor: t.border }}
+                  >
+                    <p className="font-bold border-b pb-1 mb-2" style={{ borderColor: t.border, color: t.accent }}>
+                      SYSTEM DISPATCH LOG
+                    </p>
+                    <p style={{ color: t.muted }}>Status checks updated for active requests.</p>
                   </div>
                 )}
               </div>
 
-              <button 
-                onClick={() => navigate(user.role === 'WORKER' ? '/worker/profile' : '/profile')}
-                className="flex items-center gap-2 text-slate-700 hover:text-blue-600"
+              {/* Profile Shortcut */}
+              <button
+                type="button"
+                onClick={() => navigate(isWorker ? '/worker/profile' : '/profile')}
+                className="p-2 border flex items-center justify-center"
+                style={{ borderColor: t.border, background: 'transparent', color: t.text }}
               >
-                <div className="w-8 h-8 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 font-semibold">
-                  <User className="w-4 h-4" />
-                </div>
+                <User className="w-3.5 h-3.5" />
               </button>
 
-              <button 
-                onClick={logout} 
-                className="text-xs text-slate-500 hover:text-slate-800 ml-2"
+              {/* Sign Out */}
+              <button
+                type="button"
+                onClick={logout}
+                className="wd-mono text-xs font-bold px-2 py-1 hover:underline"
+                style={{ color: t.muted }}
               >
-                Logout
+                EXIT
               </button>
             </>
           ) : (
             <>
-              <Link to="/login" className="text-slate-600 hover:text-blue-600">
-                Log In
-              </Link>
-              <Link 
-                to="/register" 
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+              <button
+                type="button"
+                onClick={() => navigate('/login')}
+                className="wd-mono text-xs font-bold px-3 py-1.5 hidden sm:block"
+                style={{ color: t.text }}
               >
-                Get Started
-              </Link>
+                LOG IN
+              </button>
+
+              <button
+                type="button"
+                onClick={() => navigate('/login')}
+                className="wd-mono wd-btn text-xs font-bold px-4 py-2 flex items-center gap-1.5"
+                style={{
+                  background: t.accent,
+                  color: mode === 'light' ? '#FFFFFF' : '#121416',
+                  border: 'none',
+                }}
+              >
+                GET STARTED <ArrowRight className="w-3.5 h-3.5" />
+              </button>
             </>
           )}
         </div>
-
-        <button 
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)} 
-          className="sm:hidden p-2 text-slate-600 hover:text-slate-900"
-        >
-          {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-        </button>
       </div>
-
-      {mobileMenuOpen && (
-        <div className="sm:hidden border-t border-slate-200 bg-white px-4 py-4 space-y-3 text-sm">
-          {user ? (
-            <>
-              <Link to={getDashboardPath()} onClick={() => setMobileMenuOpen(false)} className="block py-1 text-slate-700">
-                Dashboard
-              </Link>
-              <button 
-                onClick={() => { logout(); setMobileMenuOpen(false); }}
-                className="block text-left w-full py-1 text-red-600"
-              >
-                Sign Out
-              </button>
-            </>
-          ) : (
-            <>
-              <Link to="/login" onClick={() => setMobileMenuOpen(false)} className="block py-1 text-slate-700">
-                Log In
-              </Link>
-              <Link to="/register" onClick={() => setMobileMenuOpen(false)} className="block py-1 text-blue-600 font-semibold">
-                Sign Up
-              </Link>
-            </>
-          )}
-        </div>
-      )}
     </header>
   );
 }

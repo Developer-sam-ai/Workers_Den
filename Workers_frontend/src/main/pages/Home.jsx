@@ -1,30 +1,25 @@
 import { useState } from "react";
 
-// ---------------------------------------------------------------------------
-// Design tokens — Modern Industrial / Utility palette
-// Dark mode mirrors the light mode's restraint instead of inverting to
-// pure black/white, so neither mode is harsher than the other.
-// ---------------------------------------------------------------------------
 const THEME = {
   light: {
-    bg: "#EDECE7",       // Slightly deeper putty — less glare than stark white
-    surface: "#2F363F",  // Slate Gray (containers)
-    text: "#33383D",     // Softened charcoal — lower contrast than near-black
+    bg: "#E3E1DB",
+    surface: "#2F363F",
+    text: "#3A3F44",
     onSurface: "#F4F3EF",
-    accent: "#E85F2C",   // Slightly deepened Safety Orange — less searing on light bg
+    accent: "#E85F2C",
     accentText: "#1A1D20",
-    border: "#D1D5DB",   // Steel Line
+    border: "#C9CDD2",
     muted: "#6B7280",
   },
   dark: {
-    bg: "#1E2124",       // Graphite, not pure black
-    surface: "#2A2F35",
-    text: "#E4E2DC",     // Warm off-white, not pure white
-    onSurface: "#E4E2DC",
-    accent: "#FF8659",   // Softened Safety Orange
-    accentText: "#1A1D20",
-    border: "#3A4048",
-    muted: "#8A9099",
+    bg: "#141A21",
+    surface: "#1E2731",
+    text: "#D7DEE4",
+    onSurface: "#D7DEE4",
+    accent: "#5B8DEF",
+    accentText: "#0F1620",
+    border: "#2C3844",
+    muted: "#7C8A99",
   },
 };
 
@@ -33,16 +28,33 @@ const FEATURES = [
     code: "W-01",
     title: "Find Workers",
     desc: "Browse verified profiles by trade, rating, and availability. Filter by job type and location.",
+    icon: (color) => (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5">
+        <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.1-3.1a4 4 0 0 1-5.1 5.1L6.3 20.7a1.5 1.5 0 0 1-2.1-2.1l9.4-9.4a4 4 0 0 1 5.1-5.1l-3.1 3.1z" strokeLinejoin="round" />
+      </svg>
+    ),
   },
   {
     code: "W-02",
     title: "Post a Job",
     desc: "List the work, set your budget, and get matched with workers ready to start.",
+    icon: (color) => (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5">
+        <rect x="5" y="4" width="14" height="17" rx="1" />
+        <path d="M9 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1M9 11h6M9 15h6M9 19h3" strokeLinecap="round" />
+      </svg>
+    ),
   },
   {
     code: "W-03",
     title: "Track Progress",
-    desc: "See job status at a glance — open, in progress, or complete. No surprises.",
+    desc: "See job status update from open to closed out — no chasing people for updates.",
+    icon: (color) => (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5">
+        <circle cx="12" cy="12" r="9" />
+        <path d="M12 7v5l3.5 2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
   },
 ];
 
@@ -69,30 +81,25 @@ export default function Home() {
         .wd-btn:active { transform: translateY(1px); }
         .wd-card { transition: border-color 150ms ease; }
         .wd-switch-knob { transition: transform 150ms ease; }
+        .wd-grain { position: relative; }
+        .wd-grain::after {
+          content: "";
+          position: absolute;
+          inset: 0;
+          opacity: 0.05;
+          pointer-events: none;
+          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+        }
         @media (prefers-reduced-motion: reduce) {
           .wd-btn, .wd-card, .wd-switch-knob { transition: none !important; }
         }
       `}</style>
 
-      {/* ---------------------------------------------------------------- */}
-      {/* Header / ticket stub                                             */}
-      {/* ---------------------------------------------------------------- */}
-      <header
-        style={{
-          maxWidth: 960,
-          margin: "0 auto",
-          padding: "28px 24px 0",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
+      <header style={{ maxWidth: 960, margin: "0 auto", padding: "28px 24px 0" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <div
+              className="wd-grain"
               style={{
                 width: 28,
                 height: 28,
@@ -100,6 +107,7 @@ export default function Home() {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
+                overflow: "hidden",
               }}
             >
               <div style={{ width: 10, height: 10, background: t.accent }} />
@@ -109,7 +117,6 @@ export default function Home() {
             </span>
           </div>
 
-          {/* Rocker-style theme switch — tactile, matches worker/industrial feel */}
           <button
             onClick={() => setMode(mode === "light" ? "dark" : "light")}
             aria-label="Toggle color mode"
@@ -153,7 +160,6 @@ export default function Home() {
           </button>
         </div>
 
-        {/* Status line — real indicator, not decoration */}
         <div
           className="wd-mono"
           style={{
@@ -167,51 +173,25 @@ export default function Home() {
           }}
         >
           <span style={{ width: 6, height: 6, background: t.accent, display: "inline-block" }} />
-          STATUS: OPEN &nbsp;·&nbsp; 3 ACTIVE MODULES
+          STATUS: OPEN &nbsp;·&nbsp; 3 JOBS ON THE BOARD
         </div>
 
-        {/* Perforated divider — ticket tear line */}
-        <div
-          style={{
-            marginTop: 16,
-            borderTop: `1px dashed ${t.border}`,
-          }}
-        />
+        <div style={{ marginTop: 16, borderTop: `1px dashed ${t.border}` }} />
       </header>
 
-      {/* ---------------------------------------------------------------- */}
-      {/* Hero                                                             */}
-      {/* ---------------------------------------------------------------- */}
       <section style={{ maxWidth: 960, margin: "0 auto", padding: "40px 24px 8px" }}>
         <h1
           className="wd-display"
-          style={{
-            fontSize: "clamp(28px, 5vw, 40px)",
-            fontWeight: 800,
-            lineHeight: 1.15,
-            margin: 0,
-            maxWidth: 560,
-          }}
+          style={{ fontSize: "clamp(28px, 5vw, 40px)", fontWeight: 800, lineHeight: 1.15, margin: 0, maxWidth: 560 }}
         >
-          Work orders, handled like paperwork should be — clean and fast.
+          Post the job. Find the worker. Get it closed out.
         </h1>
-        <p
-          style={{
-            marginTop: 14,
-            fontSize: 15,
-            lineHeight: 1.6,
-            color: t.muted,
-            maxWidth: 480,
-          }}
-        >
-          Post a job, find a worker, track it through to done. No clutter, no noise —
-          built for people who check this screen every day.
+        <p style={{ marginTop: 14, fontSize: 15, lineHeight: 1.6, color: t.muted, maxWidth: 480 }}>
+          No clutter, no chasing people for updates. Built for a screen you'll
+          check every day, not once a quarter.
         </p>
       </section>
 
-      {/* ---------------------------------------------------------------- */}
-      {/* Feature blocks — work-order cards                                */}
-      {/* ---------------------------------------------------------------- */}
       <section
         style={{
           maxWidth: 960,
@@ -226,39 +206,22 @@ export default function Home() {
           <div
             key={f.code}
             className="wd-card"
-            style={{
-              border: `1px solid ${t.border}`,
-              padding: "20px 18px",
-              background: "transparent",
-            }}
+            style={{ border: `1px solid ${t.border}`, padding: "20px 18px", background: "transparent" }}
           >
-            <div
-              className="wd-mono"
-              style={{
-                fontSize: 11,
-                letterSpacing: "0.06em",
-                color: t.accent,
-                marginBottom: 10,
-              }}
-            >
-              {f.code}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+              {f.icon(t.text)}
+              <span className="wd-mono" style={{ fontSize: 11, letterSpacing: "0.06em", color: t.accent }}>
+                {f.code}
+              </span>
             </div>
-            <h3
-              className="wd-display"
-              style={{ fontSize: 17, fontWeight: 700, margin: "0 0 8px" }}
-            >
+            <h3 className="wd-display" style={{ fontSize: 17, fontWeight: 700, margin: "0 0 8px" }}>
               {f.title}
             </h3>
-            <p style={{ fontSize: 13.5, lineHeight: 1.55, color: t.muted, margin: 0 }}>
-              {f.desc}
-            </p>
+            <p style={{ fontSize: 13.5, lineHeight: 1.55, color: t.muted, margin: 0 }}>{f.desc}</p>
           </div>
         ))}
       </section>
 
-      {/* ---------------------------------------------------------------- */}
-      {/* CTA — the one place accent color does real work                  */}
-      {/* ---------------------------------------------------------------- */}
       <section
         style={{
           maxWidth: 960,

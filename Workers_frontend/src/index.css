@@ -1,3 +1,49 @@
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+  --font-display: 'Archivo', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.wd-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
+
+.wd-mono {
+  font-family: var(--font-mono);
+  letter-spacing: 0.04em;
+}
+
+.wd-btn {
+  transition: background-color 150ms ease, border-color 150ms ease, transform 80ms ease;
+}
+
+.wd-btn:active {
+  transform: translateY(1px);
+}
+
+.wd-switch-knob {
+  transition: transform 150ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

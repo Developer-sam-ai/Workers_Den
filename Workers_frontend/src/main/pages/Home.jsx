@@ -10,8 +10,8 @@ const STATIC_CATEGORIES = [
   { name: 'Carpentry', price: '₹599', code: 'TR-03', image: 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=600&auto=format&fit=crop&q=80' },
   { name: 'Painting', price: '₹799', code: 'TR-04', image: 'https://images.unsplash.com/photo-1589834390005-5d4fb9bf3d32?w=600&auto=format&fit=crop&q=80' },
   { name: 'Cleaning', price: '₹349', code: 'TR-05', image: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=600&auto=format&fit=crop&q=80' },
-  { name: 'AC Repair', price: '₹449', code: 'TR-06', image: 'https://images.unsplash.com/photo-1621905251918-48416bd8575a?w=600&auto=format&fit=crop&q=80' },
-  { name: 'Appliance Fix', price: '₹549', code: 'TR-07', image: 'https://images.unsplash.com/photo-1581092921461-7031e4bf6315?w=600&auto=format&fit=crop&q=80' },
+  { name: 'AC Repair', price: '₹449', code: 'TR-06', image: 'https://plus.unsplash.com/premium_photo-1683134512538-7b390d0adc9e?w=1000&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8YXBwbGlhbmNlJTIwZml4fGVufDB8fDB8fHww' },
+  { name: 'Appliance Fix', price: '₹549', code: 'TR-07', image: 'https://images.unsplash.com/photo-1758101755915-462eddc23f57?q=80&w=1074&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' },
   { name: 'General Help', price: '₹299', code: 'TR-08', image: 'https://images.unsplash.com/photo-1604328698692-f76ea9498e76?w=600&auto=format&fit=crop&q=80' },
 ];
 
@@ -188,9 +188,6 @@ export default function Home() {
                 />
 
                 <div className="relative z-10 p-4 space-y-1">
-                  <div className="wd-mono text-[10px] font-bold tracking-widest uppercase" style={{ color: '#34D399' }}>
-                    {cat.code}
-                  </div>
                   <div className="wd-display font-black text-lg text-white uppercase tracking-tight">
                     {cat.name}
                   </div>

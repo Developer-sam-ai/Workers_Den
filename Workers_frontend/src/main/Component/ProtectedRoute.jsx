@@ -1,5 +1,5 @@
 import React from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate, useLocation, Outlet } from 'react-router-dom';
 
 export default function ProtectedRoute({ children, allowedRoles }) {
   const location = useLocation();
@@ -10,10 +10,12 @@ export default function ProtectedRoute({ children, allowedRoles }) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (allowedRoles && !allowedRoles.includes(user.role)) {
-    const fallbackPath = user.role === 'WORKER' ? '/worker/dashboard' : '/customer/dashboard';
+  const normalizedRole = user.role ? user.role.replace('ROLE_', '') : null;
+
+  if (allowedRoles && !allowedRoles.includes(normalizedRole)) {
+    const fallbackPath = normalizedRole === 'WORKER' ? '/worker/dashboard' : '/customer/dashboard';
     return <Navigate to={fallbackPath} replace />;
   }
 
-  return children;
+  return children ? children : <Outlet />;
 }

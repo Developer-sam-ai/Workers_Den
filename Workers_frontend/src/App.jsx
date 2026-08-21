@@ -1,47 +1,72 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-
-import Navbar from './main/Component/Navbar';
-import Footer from './main/Component/Footer';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { useTheme } from './theme/ThemeContext';
 import ProtectedRoute from './main/Component/ProtectedRoute';
 
+import LandingNavbar from './main/Component/LandingNavbar';
 import Home from './main/pages/Home';
 import Login from './main/pages/Login';
-import Browse from './main/pages/Browse';
+import Register from './main/pages/Register';
+
 import CustomerDashboard from './main/pages/Customer/CustomerDashboard';
+import CreateJobPage from './main/pages/Customer/CreateJobPage';
+
 import WorkerDashboard from './main/pages/Worker/WorkerDashboard';
+import FindJobsPage from './main/pages/Worker/FindJobsPage';
+import WorkerProfilePage from './main/pages/Worker/WorkerProfilePage';
+
 import JobDetailsPage from './main/pages/jobs/JobDetailsPage';
+
+function AppLayout() {
+  const location = useLocation();
+  const { theme: t } = useTheme();
+
+  const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
+
+  return (
+    <div
+      style={{
+        minHeight: '100vh',
+        background: t.bg,
+        color: t.text,
+        transition: 'background 150ms ease, color 150ms ease',
+      }}
+      className="font-sans flex flex-col"
+    >
+      {!isAuthPage && <LandingNavbar />}
+
+      <main className="flex-1">
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+
+          <Route element={<ProtectedRoute allowedRoles={['CUSTOMER']} />}>
+            <Route path="/customer/dashboard" element={<CustomerDashboard />} />
+            <Route path="/customer/create-job" element={<CreateJobPage />} />
+          </Route>
+
+          <Route element={<ProtectedRoute allowedRoles={['WORKER']} />}>
+            <Route path="/worker/dashboard" element={<WorkerDashboard />} />
+            <Route path="/worker/find-jobs" element={<FindJobsPage />} />
+            <Route path="/worker/profile" element={<WorkerProfilePage />} />
+          </Route>
+
+          <Route element={<ProtectedRoute allowedRoles={['CUSTOMER', 'WORKER', 'ADMIN']} />}>
+            <Route path="/jobs/:id" element={<JobDetailsPage />} />
+          </Route>
+
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </main>
+    </div>
+  );
+}
 
 export default function App() {
   return (
     <Router>
-      <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans">
-        <Navbar />
-
-        <main className="flex-1">
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/browse" element={<Browse />} />
-            <Route path="/login" element={<Login />} />
-
-            <Route element={<ProtectedRoute allowedRoles={['CUSTOMER']} />}>
-              <Route path="/customer/dashboard" element={<CustomerDashboard />} />
-            </Route>
-
-            <Route element={<ProtectedRoute allowedRoles={['WORKER']} />}>
-              <Route path="/worker/dashboard" element={<WorkerDashboard />} />
-            </Route>
-
-            <Route element={<ProtectedRoute allowedRoles={['CUSTOMER', 'WORKER', 'ADMIN']} />}>
-              <Route path="/jobs/:id" element={<JobDetailsPage />} />
-            </Route>
-
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </main>
-
-        <Footer />
-      </div>
+      <AppLayout />
     </Router>
   );
 }

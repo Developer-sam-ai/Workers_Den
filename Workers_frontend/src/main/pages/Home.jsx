@@ -1,265 +1,351 @@
-import { useState } from "react";
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useTheme } from '../../theme/ThemeContext'; // Adjust path if needed
+import api from '../../api/axiosClient';
+import { ArrowRight, ShieldCheck, Zap, Layers, Users, Wrench } from 'lucide-react';
 
-const THEME = {
-  light: {
-    bg: "#E3E1DB",
-    surface: "#2F363F",
-    text: "#3A3F44",
-    onSurface: "#F4F3EF",
-    accent: "#E85F2C",
-    accentText: "#1A1D20",
-    border: "#C9CDD2",
-    muted: "#6B7280",
-  },
-  dark: {
-    bg: "#141A21",
-    surface: "#1E2731",
-    text: "#D7DEE4",
-    onSurface: "#D7DEE4",
-    accent: "#5B8DEF",
-    accentText: "#0F1620",
-    border: "#2C3844",
-    muted: "#7C8A99",
-  },
-};
+const STATIC_CATEGORIES = [
+  { name: 'Plumbing', price: '₹499', code: 'TR-01', image: 'https://images.unsplash.com/photo-1607472586893-edb57bdc0e39?w=600&auto=format&fit=crop&q=80' },
+  { name: 'Electrical', price: '₹399', code: 'TR-02', image: 'https://images.unsplash.com/photo-1621905252507-b35492cc74b4?w=600&auto=format&fit=crop&q=80' },
+  { name: 'Carpentry', price: '₹599', code: 'TR-03', image: 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=600&auto=format&fit=crop&q=80' },
+  { name: 'Painting', price: '₹799', code: 'TR-04', image: 'https://images.unsplash.com/photo-1589834390005-5d4fb9bf3d32?w=600&auto=format&fit=crop&q=80' },
+  { name: 'Cleaning', price: '₹349', code: 'TR-05', image: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=600&auto=format&fit=crop&q=80' },
+  { name: 'AC Repair', price: '₹449', code: 'TR-06', image: 'https://images.unsplash.com/photo-1621905251918-48416bd8575a?w=600&auto=format&fit=crop&q=80' },
+  { name: 'Appliance Fix', price: '₹549', code: 'TR-07', image: 'https://images.unsplash.com/photo-1581092921461-7031e4bf6315?w=600&auto=format&fit=crop&q=80' },
+  { name: 'General Help', price: '₹299', code: 'TR-08', image: 'https://images.unsplash.com/photo-1604328698692-f76ea9498e76?w=600&auto=format&fit=crop&q=80' },
+];
 
-const FEATURES = [
+const STATS = [
+  { value: '500+', label: 'Jobs Completed' },
+  { value: '120+', label: 'Verified Pros' },
+  { value: '4.8', label: 'Avg. Rating' },
+  { value: '30 Days', label: 'Service Warranty' },
+];
+
+const WORKFLOW = [
   {
-    code: "W-01",
-    title: "Find Workers",
-    desc: "Browse verified profiles by trade, rating, and availability. Filter by job type and location.",
-    icon: (color) => (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5">
-        <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.1-3.1a4 4 0 0 1-5.1 5.1L6.3 20.7a1.5 1.5 0 0 1-2.1-2.1l9.4-9.4a4 4 0 0 1 5.1-5.1l-3.1 3.1z" strokeLinejoin="round" />
-      </svg>
-    ),
+    step: '01',
+    title: 'DIRECT DISPATCH',
+    desc: 'Requests auto-match with qualified local tradesmen without bid wars or wait times.',
+    Icon: Zap,
   },
   {
-    code: "W-02",
-    title: "Post a Job",
-    desc: "List the work, set your budget, and get matched with workers ready to start.",
-    icon: (color) => (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5">
-        <rect x="5" y="4" width="14" height="17" rx="1" />
-        <path d="M9 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1M9 11h6M9 15h6M9 19h3" strokeLinecap="round" />
-      </svg>
-    ),
+    step: '02',
+    title: 'LOCKED PRICING',
+    desc: 'Standardized rate cards and optimistic concurrency lock prevent surprise overcharging.',
+    Icon: ShieldCheck,
   },
   {
-    code: "W-03",
-    title: "Track Progress",
-    desc: "See job status update from open to closed out — no chasing people for updates.",
-    icon: (color) => (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5">
-        <circle cx="12" cy="12" r="9" />
-        <path d="M12 7v5l3.5 2" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    ),
+    step: '03',
+    title: 'VERIFIED SIGN-OFF',
+    desc: 'Payments and ratings release strictly when the task transitions to COMPLETED status.',
+    Icon: Layers,
   },
 ];
 
 export default function Home() {
-  const [mode, setMode] = useState("light");
-  const t = THEME[mode];
+  const navigate = useNavigate();
+  const { mode, theme: t } = useTheme();
+  const [categories, setCategories] = useState([]);
+
+  useEffect(() => {
+    api.get('/Categories')
+      .then((res) => {
+        if (res.data && res.data.length > 0) {
+          const merged = res.data.map((cat, idx) => ({
+            name: cat.catName,
+            price: `₹${cat.customerPrice}`,
+            code: `TR-0${idx + 1}`,
+            image: STATIC_CATEGORIES[idx % STATIC_CATEGORIES.length].image,
+          }));
+          setCategories(merged);
+        } else {
+          setCategories(STATIC_CATEGORIES);
+        }
+      })
+      .catch(() => setCategories(STATIC_CATEGORIES));
+  }, []);
+
+  const displayCategories = categories.length > 0 ? categories : STATIC_CATEGORIES;
 
   return (
     <div
       style={{
-        minHeight: "100vh",
         background: t.bg,
         color: t.text,
-        fontFamily: "'Inter', system-ui, sans-serif",
-        transition: "background 150ms ease, color 150ms ease",
+        transition: 'background 150ms ease, color 150ms ease',
       }}
+      className="w-full min-h-screen"
     >
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@700;800&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap');
-        * { box-sizing: border-box; }
-        .wd-mono { font-family: 'IBM Plex Mono', monospace; }
-        .wd-display { font-family: 'Archivo', system-ui, sans-serif; }
-        .wd-btn { transition: background 150ms ease, transform 80ms ease; }
-        .wd-btn:active { transform: translateY(1px); }
-        .wd-card { transition: border-color 150ms ease; }
-        .wd-switch-knob { transition: transform 150ms ease; }
-        .wd-grain { position: relative; }
-        .wd-grain::after {
-          content: "";
-          position: absolute;
-          inset: 0;
-          opacity: 0.05;
-          pointer-events: none;
-          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-        }
-        @media (prefers-reduced-motion: reduce) {
-          .wd-btn, .wd-card, .wd-switch-knob { transition: none !important; }
-        }
-      `}</style>
-
-      <header style={{ maxWidth: 960, margin: "0 auto", padding: "28px 24px 0" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div
-              className="wd-grain"
+      <div className="max-w-6xl mx-auto px-4 sm:px-8 py-8 space-y-16">
+        
+        {/* ─── Hero Section ─── */}
+        <section className="pt-4 sm:pt-10">
+          <div className="flex items-center gap-2 mb-4">
+            <span
+              className="wd-mono text-[10px] sm:text-xs font-bold px-2 py-0.5 border uppercase tracking-wider"
               style={{
-                width: 28,
-                height: 28,
-                background: t.surface,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                overflow: "hidden",
+                background: t.accentSoft,
+                borderColor: t.border,
+                color: t.accent,
               }}
             >
-              <div style={{ width: 10, height: 10, background: t.accent }} />
-            </div>
-            <span className="wd-display" style={{ fontSize: 18, fontWeight: 800, letterSpacing: "0.02em" }}>
-              WORTERSDEN
+              PUNE 
             </span>
+            <span className="flex items-center gap-1.5 wd-mono text-[10px] font-bold" style={{ color: t.success }}>
+              <span className="w-2 h-2 rounded-full inline-block" style={{ background: t.success }} />
+              VERIFIED WORKFORCE
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+            <div className="lg:col-span-8 space-y-5">
+              <h1
+                className="wd-display font-black text-3xl sm:text-5xl lg:text-6xl tracking-tight leading-none uppercase"
+                style={{ color: t.text }}
+              >
+                Post the job. <span style={{ color: t.accent }}>Find the worker.</span> Close it out.
+              </h1>
+
+              <p className="text-sm sm:text-base leading-relaxed max-w-xl" style={{ color: t.muted }}>
+                Standardized platform pricing, real-time work-order tracking, and verified trade professionals. Built like physical tools for repeat daily operation.
+              </p>
+
+              <div className="flex flex-wrap items-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => navigate('/login')}
+                  className="wd-mono wd-btn text-xs font-bold px-6 py-3.5 flex items-center gap-2 cursor-pointer shadow-xs"
+                  style={{
+                    background: t.accent,
+                    color: t.accentText,
+                    border: 'none',
+                  }}
+                >
+                  BOOK A SERVICE <ArrowRight size={14} strokeWidth={2.5} />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => navigate('/login')}
+                  className="wd-mono wd-btn text-xs font-semibold px-5 py-3.5 border cursor-pointer"
+                  style={{
+                    borderColor: t.border,
+                    color: t.text,
+                    background: 'transparent',
+                  }}
+                >
+                  OPERATE AS WORKER
+                </button>
+              </div>
+            </div>
+          
+          </div>
+        </section>
+        
+
+        {/* ─── Service Category Photo Cards ─── */}
+        <section id="services" className="space-y-6">
+          <div className="flex justify-between items-baseline border-b pb-3" style={{ borderColor: t.border }}>
+            <div className="flex items-center gap-2">
+              <span className="wd-mono text-xs font-bold" style={{ color: t.accent }}></span>
+              <h2 className="wd-display font-black text-xl uppercase tracking-tight" style={{ color: t.text }}>
+                Standard Service Catalog
+              </h2>
+            </div>
+            <span className="wd-mono text-xs" style={{ color: t.muted }}></span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {displayCategories.map((cat) => (
+              <div
+                key={cat.name}
+                // no navigation
+                onClick={() => navigate('')}
+                className="group relative border overflow-hidden cursor-pointer flex flex-col justify-end transition-all duration-200 hover:-translate-y-1"
+                style={{
+                  background: t.surface,
+                  borderColor: t.border,
+                  minHeight: 220,
+                }}
+              >
+                <img
+                  src={cat.image}
+                  alt={cat.name}
+                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  style={{
+                    filter: mode === 'dark' ? 'brightness(0.65) contrast(1.1)' : 'brightness(0.85) contrast(1.05)',
+                  }}
+                />
+
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    background: mode === 'dark'
+                      ? 'linear-gradient(to top, rgba(15, 18, 25, 0.95) 0%, rgba(15, 18, 25, 0.3) 60%, transparent 100%)'
+                      : 'linear-gradient(to top, rgba(28, 21, 40, 0.9) 0%, rgba(28, 21, 40, 0.25) 60%, transparent 100%)',
+                  }}
+                />
+
+                <div className="relative z-10 p-4 space-y-1">
+                  <div className="wd-mono text-[10px] font-bold tracking-widest uppercase" style={{ color: '#34D399' }}>
+                    {cat.code}
+                  </div>
+                  <div className="wd-display font-black text-lg text-white uppercase tracking-tight">
+                    {cat.name}
+                  </div>
+                  <div className="flex items-center justify-between pt-1">
+                    <span className="wd-mono text-xs font-bold text-white/90">
+                      from {cat.price}
+                    </span>
+                    <span className="wd-mono text-[10px] text-white/70 border border-white/30 px-1.5 py-0.5">
+                      INSTANT
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section
+          className="grid grid-cols-2 lg:grid-cols-4 border divide-x"
+          style={{
+            background: t.surface,
+            borderColor: t.border,
+          }}
+        >
+          {STATS.map((s, idx) => (
+            <div key={idx} className="p-5 sm:p-6" style={{ borderColor: t.border }}>
+              <div className="wd-display font-black text-2xl sm:text-3xl" style={{ color: t.accent }}>
+                {s.value}
+              </div>
+              <div className="wd-mono text-[11px] font-semibold mt-1 uppercase tracking-wider" style={{ color: t.muted }}>
+                {s.label}
+              </div>
+            </div>
+          ))}
+        </section>
+
+        {/* ─── Workflow Execution ─── */}
+        <section id="workflow" className="space-y-6">
+          <div className="flex items-center gap-2 border-b pb-3" style={{ borderColor: t.border }}>
+            <span className="wd-mono text-xs font-bold" style={{ color: t.accent }}></span>
+            <h2 className="wd-display font-black text-xl uppercase tracking-tight" style={{ color: t.text }}>
+              Execution Protocol
+            </h2>
+          </div>
+
+          <div
+            className="grid grid-cols-1 md:grid-cols-3 border divide-y md:divide-y-0 md:divide-x"
+            style={{ background: t.surface, borderColor: t.border }}
+          >
+            {WORKFLOW.map(({ step, title, desc, Icon }) => (
+              <div key={step} className="p-6 space-y-3" style={{ borderColor: t.border }}>
+                <div
+                  className="w-8 h-8 flex items-center justify-center border"
+                  style={{ borderColor: t.border, background: t.accentSoft, color: t.accent }}
+                >
+                  <Icon size={16} strokeWidth={2.25} />
+                </div>
+                <div className="wd-mono text-[10px] font-bold" style={{ color: t.accent }}>
+                  STEP {step}
+                </div>
+                <h3 className="wd-display font-extrabold text-base uppercase" style={{ color: t.text }}>
+                  {title}
+                </h3>
+                <p className="text-xs leading-relaxed" style={{ color: t.muted }}>
+                  {desc}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ─── Roles & Access ─── */}
+        <section id="team" className="space-y-6">
+          <div className="flex items-center gap-2 border-b pb-3" style={{ borderColor: t.border }}>
+            <span className="wd-mono text-xs font-bold" style={{ color: t.accent }}></span>
+            <h2 className="wd-display font-black text-xl uppercase tracking-tight" style={{ color: t.text }}>
+              Platform Roles
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div
+              className="p-6 border flex items-start gap-4"
+              style={{ background: t.surface, borderColor: t.border }}
+            >
+              <div
+                className="w-10 h-10 flex items-center justify-center border shrink-0"
+                style={{ borderColor: t.border, background: t.accentSoft, color: t.accent }}
+              >
+                <Users size={18} />
+              </div>
+              <div className="space-y-1">
+                <h4 className="wd-display font-black text-base uppercase" style={{ color: t.text }}>Customer Console</h4>
+                <p className="text-xs leading-relaxed" style={{ color: t.muted }}>
+                  Create job  with specific time slots, inspect assigned operator profiles, and release payment ratings upon closeout.
+                </p>
+              </div>
+            </div>
+
+            <div
+              className="p-6 border flex items-start gap-4"
+              style={{ background: t.surface, borderColor: t.border }}
+            >
+              <div
+                className="w-10 h-10 flex items-center justify-center border shrink-0"
+                style={{ borderColor: t.border, background: t.accentSoft, color: t.accent }}
+              >
+                <Wrench size={18} />
+              </div>
+              <div className="space-y-1">
+                <h4 className="wd-display font-black text-base uppercase" style={{ color: t.text }}>Worker Terminal</h4>
+                <p className="text-xs leading-relaxed" style={{ color: t.muted }}>
+                  Discover local sector tickets, claim jobs with one click, and manage progress through the state machine.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ─── Bottom CTA ─── */}
+        <section
+          className="border p-8 flex flex-col sm:flex-row items-center justify-between gap-6"
+          style={{ background: t.surface, borderColor: t.border }}
+        >
+          <div className="space-y-1">
+            <div className="wd-mono text-xs font-bold" style={{ color: t.accent }}>READY TO DISPATCH?</div>
+            <div className="wd-display font-black text-xl uppercase" style={{ color: t.text }}>
+              Book an appointment or claim open work orders now.
+            </div>
           </div>
 
           <button
-            onClick={() => setMode(mode === "light" ? "dark" : "light")}
-            aria-label="Toggle color mode"
-            className="wd-mono wd-btn"
+            type="button"
+            onClick={() => navigate('')}
+            className="wd-mono wd-btn text-xs font-bold px-6 py-3.5 whitespace-nowrap cursor-pointer"
             style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              background: "transparent",
-              border: `1px solid ${t.border}`,
-              padding: "6px 10px",
-              cursor: "pointer",
-              color: t.text,
-              fontSize: 11,
-              letterSpacing: "0.06em",
+              background: t.accent,
+              color: t.accentText,
+              border: 'none',
             }}
           >
-            <span>{mode === "light" ? "LIGHT" : "DARK"}</span>
-            <span
-              style={{
-                position: "relative",
-                width: 32,
-                height: 16,
-                background: t.border,
-                display: "inline-block",
-              }}
-            >
-              <span
-                className="wd-switch-knob"
-                style={{
-                  position: "absolute",
-                  top: 2,
-                  left: 2,
-                  width: 12,
-                  height: 12,
-                  background: t.accent,
-                  transform: mode === "dark" ? "translateX(16px)" : "translateX(0)",
-                }}
-              />
-            </span>
+            ENTER PLATFORM →
           </button>
-        </div>
+        </section>
 
-        <div
-          className="wd-mono"
-          style={{
-            marginTop: 20,
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            fontSize: 11,
-            letterSpacing: "0.06em",
-            color: t.muted,
-          }}
+        {/* ─── Footer ─── */}
+        <footer
+          className="pt-6 pb-12 border-t flex flex-col sm:flex-row justify-between items-center gap-4 wd-mono text-xs"
+          style={{ borderColor: t.border, color: t.muted }}
         >
-          <span style={{ width: 6, height: 6, background: t.accent, display: "inline-block" }} />
-          STATUS: OPEN &nbsp;·&nbsp; 3 JOBS ON THE BOARD
-        </div>
+          <div>© 2026 WORKERS DEN · ALL RIGHTS RESERVED </div>
+          <div>A samesa company product</div>
+        </footer>
 
-        <div style={{ marginTop: 16, borderTop: `1px dashed ${t.border}` }} />
-      </header>
-
-      <section style={{ maxWidth: 960, margin: "0 auto", padding: "40px 24px 8px" }}>
-        <h1
-          className="wd-display"
-          style={{ fontSize: "clamp(28px, 5vw, 40px)", fontWeight: 800, lineHeight: 1.15, margin: 0, maxWidth: 560 }}
-        >
-          Post the job. Find the worker. Get it closed out.
-        </h1>
-        <p style={{ marginTop: 14, fontSize: 15, lineHeight: 1.6, color: t.muted, maxWidth: 480 }}>
-          No clutter, no chasing people for updates. Built for a screen you'll
-          check every day, not once a quarter.
-        </p>
-      </section>
-
-      <section
-        style={{
-          maxWidth: 960,
-          margin: "0 auto",
-          padding: "24px 24px 0",
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-          gap: 16,
-        }}
-      >
-        {FEATURES.map((f) => (
-          <div
-            key={f.code}
-            className="wd-card"
-            style={{ border: `1px solid ${t.border}`, padding: "20px 18px", background: "transparent" }}
-          >
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-              {f.icon(t.text)}
-              <span className="wd-mono" style={{ fontSize: 11, letterSpacing: "0.06em", color: t.accent }}>
-                {f.code}
-              </span>
-            </div>
-            <h3 className="wd-display" style={{ fontSize: 17, fontWeight: 700, margin: "0 0 8px" }}>
-              {f.title}
-            </h3>
-            <p style={{ fontSize: 13.5, lineHeight: 1.55, color: t.muted, margin: 0 }}>{f.desc}</p>
-          </div>
-        ))}
-      </section>
-
-      <section
-        style={{
-          maxWidth: 960,
-          margin: "0 auto",
-          padding: "36px 24px 64px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          flexWrap: "wrap",
-          gap: 16,
-          borderTop: `1px solid ${t.border}`,
-          marginTop: 32,
-        }}
-      >
-        <div>
-          <div className="wd-mono" style={{ fontSize: 11, color: t.muted, letterSpacing: "0.06em" }}>
-            NEED SOMETHING BUILT?
-          </div>
-          <div className="wd-display" style={{ fontSize: 18, fontWeight: 700, marginTop: 4 }}>
-            Get in touch and we'll match you today.
-          </div>
-        </div>
-        <button
-          className="wd-btn"
-          style={{
-            background: t.accent,
-            color: t.accentText,
-            border: "none",
-            padding: "14px 28px",
-            fontSize: 14,
-            fontWeight: 600,
-            cursor: "pointer",
-            fontFamily: "'Inter', system-ui, sans-serif",
-          }}
-        >
-          Get in Touch
-        </button>
-      </section>
+      </div>
     </div>
   );
 }

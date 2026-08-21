@@ -1,26 +1,19 @@
 import React from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 
-export default function ProtectedRoute({ allowedRoles }) {
+export default function ProtectedRoute({ children, allowedRoles }) {
+  const location = useLocation();
   const token = localStorage.getItem('token');
-  
-  if (!token) {
-    return <Navigate to="/login" replace />;
+  const user = JSON.parse(localStorage.getItem('user') || 'null');
+
+  if (!token || !user) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  let userRole = null;
-  try {
-    const payload = JSON.parse(atob(token.split('.')[1]));
-    userRole = payload.role ? payload.role.replace('ROLE_', '') : null;
-  } catch {
-    localStorage.clear();
-    return <Navigate to="/login" replace />;
+  if (allowedRoles && !allowedRoles.includes(user.role)) {
+    const fallbackPath = user.role === 'WORKER' ? '/worker/dashboard' : '/customer/dashboard';
+    return <Navigate to={fallbackPath} replace />;
   }
 
-  if (allowedRoles && !allowedRoles.includes(userRole)) {
-    const fallback = userRole === 'CUSTOMER' ? '/customer/dashboard' : '/worker/dashboard';
-    return <Navigate to={fallback} replace />;
-  }
-
-  return <Outlet />;
+  return children;
 }
